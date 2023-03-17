@@ -53,8 +53,8 @@ function App() {
       stream: true,
     };
 
-    const parent_message_id =
-      messageIdListRef.current?.[messageIdListRef.current.length - 1];
+    // const parent_message_id =
+    //   messageIdListRef.current?.[messageIdListRef.current.length - 1];
 
     // 自己发送的消息直接上屏
     messageMapRef.current[`user_${Date.now()}`] = {
@@ -74,7 +74,7 @@ function App() {
       body: JSON.stringify({
         ...body,
         messages: [{ role: 'user', content: value }],
-        parent_message_id,
+        // parent_message_id,
       }),
 
       onMessage: (res) => {
