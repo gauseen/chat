@@ -12,10 +12,12 @@ import MessageText from './components/MessageText';
 import { fetchSSE } from './utils/fetchSSE';
 import Textarea from './components/Textarea';
 import { MessageWrapperProps } from './components/MessageWrapper';
+import { defaultChatGPTConfig } from './utils/const';
+import { checkApiKey } from './utils/check';
 
 interface MessageItem {
   content: string;
-  role: 'user' | 'chatgpt';
+  role: 'user' | 'assistant';
 }
 
 function App() {
@@ -30,31 +32,23 @@ function App() {
   messageIdListRef.current = messageIdList;
 
   useEffect(() => {
-    const apiKey = window.localStorage.getItem('apiKey');
-
-    if (!apiKey) {
-      const value = window.prompt('请输入 Api Key');
-      if (!value) return;
-
-      window.localStorage.setItem('apiKey', value);
-    }
+    checkApiKey();
   }, []);
 
+  // 点击发送按钮回调
   const handleSend = useCallback((value?: string) => {
     if (!value) return;
 
-    const body = {
-      model: 'gpt-3.5-turbo',
-      temperature: 0,
-      max_tokens: 1000,
-      top_p: 1,
-      frequency_penalty: 1,
-      presence_penalty: 1,
-      stream: true,
-    };
+    checkApiKey();
 
-    // const parent_message_id =
-    //   messageIdListRef.current?.[messageIdListRef.current.length - 1];
+    const prevMessages = messageIdListRef.current?.map((msgId) => {
+      const { role, content } = messageMapRef.current[msgId] || {};
+
+      return {
+        role,
+        content,
+      };
+    });
 
     // 自己发送的消息直接上屏
     messageMapRef.current[`user_${Date.now()}`] = {
@@ -63,18 +57,17 @@ function App() {
     };
     forceUpdate({});
 
-    const apiKey = window.localStorage.getItem('apiKey');
+    const chatgptApiKey = window.localStorage.getItem('chatgptApiKey');
 
     fetchSSE('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${chatgptApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ...body,
-        messages: [{ role: 'user', content: value }],
-        // parent_message_id,
+        ...defaultChatGPTConfig,
+        messages: [...prevMessages, { role: 'user', content: value }],
       }),
 
       onMessage: (res) => {
@@ -90,25 +83,27 @@ function App() {
 
           if (content) {
             messageMapRef.current[id] = {
-              role: 'chatgpt',
+              role: 'assistant',
               content: (messageMapRef.current[id]?.content || '') + content,
             };
 
             forceUpdate({});
           }
-        } catch (error) {
+        } catch (error: any) {
+          window.alert(error?.message || JSON.stringify(error));
           console.log('onMessage error: ', error);
         }
       },
 
       onError: (error) => {
+        window.alert(error?.message || JSON.stringify(error));
         console.log('onError: ', error);
       },
     });
   }, []);
 
   return (
-    <main>
+    <main className="chat-app">
       <MessageList className="chat-message-list">
         {messageIdList?.map((msgId) => {
           const { content, role } = messageMapRef.current[msgId];
