@@ -14,6 +14,7 @@ import Textarea from './components/Textarea';
 import { MessageWrapperProps } from './components/MessageWrapper';
 import { defaultChatGPTConfig } from './utils/const';
 import { checkApiKey } from './utils/check';
+import ScrollToView from './components/ScrollToView';
 
 interface MessageItem {
   content: string;
@@ -23,6 +24,7 @@ interface MessageItem {
 function App() {
   const [updateValue, forceUpdate] = useState<any>({});
   const messageMapRef = useRef<Record<string, MessageItem>>({});
+  const activeMessageId = useRef('');
 
   const messageIdList = useMemo(() => {
     return Object.keys(messageMapRef.current);
@@ -73,10 +75,17 @@ function App() {
       onMessage: (res) => {
         try {
           // 回答完毕
-          if (!res || res === '[DONE]') return;
+          if (!res || res === '[DONE]') {
+            activeMessageId.current = '';
+            forceUpdate({});
+            return;
+          }
 
           const data = JSON.parse(res);
           const { id, choices } = data;
+
+          activeMessageId.current = id;
+
           const {
             delta: { content },
           } = choices?.[0] || {};
@@ -96,6 +105,7 @@ function App() {
       },
 
       onError: (error) => {
+        activeMessageId.current = '';
         window.alert(error?.message || JSON.stringify(error));
         console.log('onError: ', error);
       },
@@ -105,6 +115,11 @@ function App() {
   return (
     <main className="chat-app">
       <MessageList className="chat-message-list">
+        <MessageText
+          content={'你好，输入内容开始和我聊天吧'}
+          position={'left'}
+        />
+
         {messageIdList?.map((msgId) => {
           const { content, role } = messageMapRef.current[msgId];
           const position: MessageWrapperProps['position'] =
@@ -112,12 +127,15 @@ function App() {
 
           return (
             <MessageText
+              flicker={msgId === activeMessageId.current}
               content={content.trimStart()}
               position={position}
               key={msgId}
             />
           );
         })}
+
+        <ScrollToView />
       </MessageList>
 
       <Textarea onSubmit={handleSend} />

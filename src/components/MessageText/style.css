@@ -1,0 +1,20 @@
+.chat-message-text-flicker::after {
+  content: ' |';
+  color: #000;
+  font-weight: 800;
+  animation: 0.6s cursor-flicker infinite;
+}
+
+@keyframes cursor-flicker {
+  from {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
