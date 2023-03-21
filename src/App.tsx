@@ -12,9 +12,9 @@ import MessageText from './components/MessageText';
 import { fetchSSE } from './utils/fetchSSE';
 import Textarea from './components/Textarea';
 import { MessageWrapperProps } from './components/MessageWrapper';
+import useScrollToView from './hooks/useScrollToView';
 import { defaultChatGPTConfig } from './utils/const';
 import { checkApiKey } from './utils/check';
-import ScrollToView from './components/ScrollToView';
 
 interface MessageItem {
   content: string;
@@ -37,6 +37,9 @@ function App() {
     checkApiKey();
   }, []);
 
+  const [loading, setLoading] = useState(false);
+  const { inspection, scrollBottom, scrollContainerRef } = useScrollToView();
+
   // 点击发送按钮回调
   const handleSend = useCallback((value?: string) => {
     if (!value) return;
@@ -58,6 +61,8 @@ function App() {
       content: value,
     };
     forceUpdate({});
+    setLoading(() => true);
+    scrollBottom();
 
     const chatgptApiKey = window.localStorage.getItem('chatgptApiKey');
 
@@ -74,6 +79,7 @@ function App() {
 
       onMessage: (res) => {
         try {
+          setLoading(() => false);
           // 回答完毕
           if (!res || res === '[DONE]') {
             activeMessageId.current = '';
@@ -105,6 +111,7 @@ function App() {
       },
 
       onError: (error) => {
+        setLoading(() => false);
         activeMessageId.current = '';
         window.alert(error?.message || JSON.stringify(error));
         console.log('onError: ', error);
@@ -114,9 +121,9 @@ function App() {
 
   return (
     <main className="chat-app">
-      <MessageList className="chat-message-list">
+      <MessageList ref={scrollContainerRef} className="chat-message-list">
         <MessageText
-          content={'你好，输入内容开始和我聊天吧'}
+          content={'你好，我是 ChatGPT，请输入内容开始和我聊天吧'}
           position={'left'}
         />
 
@@ -135,7 +142,11 @@ function App() {
           );
         })}
 
-        <ScrollToView />
+        {loading && (
+          <MessageText flicker={true} content={''} position={'left'} />
+        )}
+
+        {inspection}
       </MessageList>
 
       <Textarea onSubmit={handleSend} />

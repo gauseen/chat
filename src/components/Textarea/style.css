@@ -8,8 +8,10 @@
   height: 50px;
   padding: 5px 4px;
 
-  padding-bottom: constant(safe-area-inset-bottom); /* 兼容 iOS < 11.2 */
-  padding-bottom: env(safe-area-inset-bottom); /* 兼容 iOS >= 11.2 */
+  /* 兼容 iOS < 11.2 */
+  /* padding-bottom: constant(safe-area-inset-bottom); */
+  /* 兼容 iOS >= 11.2 */
+  /* padding-bottom: env(safe-area-inset-bottom); */
 }
 
 .chat-textarea-input {
